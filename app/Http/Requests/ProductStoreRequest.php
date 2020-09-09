@@ -25,7 +25,7 @@ class ProductStoreRequest extends FormRequest
     {
         return [
             'title' => 'required|unique:App\Product,title|max:255',
-            'price' => 'required|digits_between:0:8'
+            'price' => 'required|digits_between:0,8'
         ];
     }
 }

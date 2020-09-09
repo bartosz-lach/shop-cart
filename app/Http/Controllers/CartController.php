@@ -15,59 +15,52 @@ class CartController extends Controller
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\Http\JsonResponse
      */
     public function index(Request $request)
     {
-        $user_id = $request->user()->id;
-        $cartService = new CartService($user_id);
-        return response($cartService->getFullCartView(), 200);
+        $user = $request->user();
+        $cartItems = CartItem::getCartByUser($user);
+        $response['total_cost'] = CartItem::calcTotalCost($user);
+        $response['items'] = CartItemResource::Collection($cartItems);
+        return response()->json($response, 200);
     }
-
 
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param CartItemStoreRequest $request
      * @return \Illuminate\Http\Response
      */
-    public function store(CartItemStoreRequest $request)
+    public function addProductToCart(CartItemStoreRequest $request)
     {
         $user = $request->user();
         $validated = $request->validated();
-
-        $cartItemExists = $user->cartItems->firstWhere('product_id', $validated['product_id']);
-        $cartService = new CartService($user->id, $validated['product_id']);
-
-        if($cartService->isAllowedAddUnitProduct($validated['quantity']) ){
-            if($cartService)
-
-            if($cartService->isAllowedAddNewProduct($validated['quantity']) || $cartItemExists){
-                $validated['user_id'] = $user->id;
-                $cartItem = CartItem::create($validated);
-                return response(new CartItemResource($cartItem), 201);
-            }
-            else{
-                return response(['error' => "You cannot add more than $cartService->limitProductsPerCart product per cart."], 422);
-            }
+        $validated['user_id'] = $user->id;
+        $cartItem = new CartItem($validated);
+        try {
+            $cartItem = $cartItem->createNewOrIncreaseQuantity();
+            return response(new CartItemResource($cartItem), 201);
+        } catch (\Exception $e) {
+            return response(['error' => $e->getMessage()], 422);
         }
-        else{
-            return response(['error' => "You cannot add more than $cartService->limitUnitsPerProduct units per product."], 422);
-
-        }
-
     }
-
 
     /**
      * Remove the specified resource from storage.
      *
-     * @param  int  $id
+     * @param CartItem $cartItem
+     * @param Request $request
      * @return \Illuminate\Http\Response
+     * @throws \Exception
      */
-    public function destroy(int $productId, Request $request)
+    public function destroy(CartItem $cartItem, Request $request)
     {
-        $cartService = new CartService($request->user()->id, $productId);
-        $cartService->removeItemFromCart();
+        if ($request->user()->id == $cartItem->user_id) {
+            $cartItem->delete();
+            return response(null, 204);
+        } else {
+            return response(['error' => 'Unauthorized '], 401);
+        }
     }
 }

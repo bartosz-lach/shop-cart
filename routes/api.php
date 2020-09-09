@@ -23,5 +23,8 @@ Route::post('register', 'AuthController@register');
 
 Route::middleware('auth:api')->group(function () {
     Route::apiResource('products', 'ProductController');
-    Route::apiResource('cart', 'CartController');
+//    Route::apiResource('cart', 'CartController');
+    Route::post('carts', 'CartController@addProductToCart')->name('carts.add-product-to-cart');
+    Route::get('carts', 'CartController@index')->name('carts.index');
+    Route::delete('cart-items/{cartItem}', 'CartController@destroy')->name('cart-items.delete');
 });

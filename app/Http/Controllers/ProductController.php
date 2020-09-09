@@ -13,19 +13,19 @@ class ProductController extends Controller
     /**
      * Display a listing of the resource.
      *
+     * @param Request $request
      * @return \Illuminate\Http\Response
      */
     public function index(Request $request)
     {
         $products = ProductResource::collection(Product::paginate(3));
         return response($products, 200);
-
     }
 
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param ProductStoreRequest $request
      * @return \Illuminate\Http\Response
      */
     public function store(ProductStoreRequest $request)
@@ -49,7 +49,7 @@ class ProductController extends Controller
     /**
      * Update the specified resource in storage.
      *
-     * @param ProductStoreRequest $request
+     * @param ProductUpdateRequest $request
      * @param Product $product
      * @return \Illuminate\Http\Response
      */
@@ -57,7 +57,7 @@ class ProductController extends Controller
     {
         $validated = $request->validated();
         $updatedProduct = $product->update($validated);
-        return response(null, 200);
+        return response(new ProductResource($updatedProduct), 200);
     }
 
     /**
